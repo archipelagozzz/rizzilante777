@@ -304,7 +304,6 @@ oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
 	local method = getnamecallmethod()
 	if not checkcaller() and (method == "InvokeServer" or method == "FireServer") and not table.find(_G.blacklist_hook, tostring(self)) then 
 		create_remote_call(ui, method, self, {...})
-		return 
 	end
 	return oldNamecall(self, ...)
 end))
