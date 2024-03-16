@@ -90,7 +90,7 @@ function build_ui()
 	local UIGridLayout = Instance.new("UIGridLayout")
 	local template_2 = Instance.new("TextLabel")
 	local clear = Instance.new("TextButton")
-	
+
 	new_drag(Frame)
 
 	rizzed2.Name = "rizzed2"
@@ -230,7 +230,7 @@ function build_ui()
 	clear.TextScaled = true
 	clear.TextSize = 14.000
 	clear.TextWrapped = true
-	
+
 	return rizzed2
 end
 
@@ -248,12 +248,12 @@ function create_remote_call(ui, method, call_name, arguments)
 	method = method or "failed777"
 	call_name = call_name or "failed777"
 	arguments = arguments or {}
-	
+
 	local ui_clone = ui.Frame.ScrollingFrame.template:Clone()
 	ui_clone.Text = `{call_name}`
 	ui_clone.Visible = true
 	ui_clone.Parent = ui.Frame.ScrollingFrame
-	
+
 	ui_clone.Activated:Connect(function()
 		ui.Frame.detail.method.Text = `METHOD : {method}`
 		ui.Frame.detail.remote.Text = `CALL NAME : {call_name}`
@@ -284,14 +284,6 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
---[[
-for i = 1, 16 do
-	create_remote_call(ui, Random.new():NextInteger(1, i) == 1 and "InvokeServer" or "FireServer", `rizz{i}`, table.create(i, i))
-	task.wait(1)
-end
---]]
-
--- [[
 local action = 1
 local blacklist = {"Get Stats", "Player Statues: Get Statue Data"}
 if not _G.blacklist_hook or action == 2 then print_warn(`>>> HOOK BLACK LIST SET\nORIGINAL : {(_G.blacklist_hook and typeof(_G.blacklist_hook == "table") and #_G.blacklist_hook >= 1) and table.concat(wrap_text_table(_G.blacklist_hook), " | ") or "no blacklist/invalid blacklist"}\nNEW : {(blacklist and typeof(blacklist) == "table" and #blacklist >= 1) and table.concat(wrap_text_table(blacklist), " | ") or "no blacklist/invalid blacklist"}`)print(`BLACKLIST SET `) _G.blacklist_hook = blacklist end
@@ -302,15 +294,11 @@ print("INITIALIZED")
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
 	local method = getnamecallmethod()
-	if not checkcaller() and (method == "InvokeServer" or method == "FireServer") and not table.find(_G.blacklist_hook, tostring(self)) then 
-		create_remote_call(ui, method, self, {...})
+	if (method == "InvokeServer" or method == "FireServer") and not table.find(_G.blacklist_hook, tostring(self)) then 
+		task.spawn(create_remote_call, ui, method, self, {...})
 	end
 	return oldNamecall(self, ...)
 end))
 
 print(`HOOK METHOD :`)
 print(oldNamecall)
-
---print_warn(`METHOD : {method}\nREMOTE CALL NAME : {table.concat(wrap_text_table(self), " | ")}\nARGUMENTS : {table.concat(wrap_text_table({ ... }), " | ")}`) 
---ui.Frame.detail.argument.Text = `ARGUMENTS : {table.concat((function() local _return = {} for _, argument in arguments do table.insert(_return, `"{argument}"`) end return _return end)(), " ,")}`
---]]
