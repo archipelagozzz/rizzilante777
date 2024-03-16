@@ -76,7 +76,7 @@ function wrap_text_table(string_table : {} | string)
 end
 
 function build_ui()
-	local rizzed = Instance.new("ScreenGui")
+	local rizzed2 = Instance.new("ScreenGui")
 	local Frame = Instance.new("Frame")
 	local ScrollingFrame = Instance.new("ScrollingFrame")
 	local template = Instance.new("TextButton")
@@ -86,15 +86,18 @@ function build_ui()
 	local method = Instance.new("TextLabel")
 	local remote = Instance.new("TextLabel")
 	local argument = Instance.new("TextLabel")
+	local ScrollingFrame_2 = Instance.new("ScrollingFrame")
+	local UIGridLayout = Instance.new("UIGridLayout")
+	local template_2 = Instance.new("TextLabel")
 	local clear = Instance.new("TextButton")
 	
 	new_drag(Frame)
 
-	rizzed.Name = "rizzed"
-	rizzed.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-	rizzed.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	rizzed2.Name = "rizzed2"
+	rizzed2.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+	rizzed2.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	Frame.Parent = rizzed
+	Frame.Parent = rizzed2
 	Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Frame.BorderSizePixel = 0
@@ -108,6 +111,7 @@ function build_ui()
 	ScrollingFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	ScrollingFrame.BorderSizePixel = 0
 	ScrollingFrame.Size = UDim2.new(0.349999994, 0, 1, 0)
+	ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 
 	template.Name = "template"
@@ -119,10 +123,13 @@ function build_ui()
 	template.Visible = false
 	template.Font = Enum.Font.SourceSans
 	template.TextColor3 = Color3.fromRGB(0, 0, 0)
+	template.TextScaled = true
 	template.TextSize = 14.000
+	template.TextWrapped = true
 
 	UIListLayout.Parent = ScrollingFrame
 	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	UIListLayout.Padding = UDim.new(0.0250000004, 0)
 
 	detail.Name = "detail"
 	detail.Parent = Frame
@@ -173,12 +180,42 @@ function build_ui()
 	argument.BorderSizePixel = 0
 	argument.LayoutOrder = 2
 	argument.Size = UDim2.new(1, 0, 0.100000001, 0)
+	argument.Visible = false
 	argument.Font = Enum.Font.Gotham
 	argument.Text = "ARGUMENTS : args1, args2"
 	argument.TextColor3 = Color3.fromRGB(255, 255, 255)
 	argument.TextScaled = true
 	argument.TextSize = 14.000
 	argument.TextWrapped = true
+
+	ScrollingFrame_2.Parent = detail
+	ScrollingFrame_2.Active = true
+	ScrollingFrame_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	ScrollingFrame_2.BackgroundTransparency = 1.000
+	ScrollingFrame_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	ScrollingFrame_2.BorderSizePixel = 0
+	ScrollingFrame_2.LayoutOrder = 10
+	ScrollingFrame_2.Size = UDim2.new(1, 0, 0.800000012, 0)
+	ScrollingFrame_2.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ScrollingFrame_2.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+	UIGridLayout.Parent = ScrollingFrame_2
+	UIGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	UIGridLayout.CellPadding = UDim2.new(0.0125000002, 0, 0.0250000004, 0)
+	UIGridLayout.CellSize = UDim2.new(0.324999988, 0, 0.150000006, 0)
+
+	template_2.Name = "template"
+	template_2.Parent = ScrollingFrame_2
+	template_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	template_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	template_2.BorderSizePixel = 0
+	template_2.Size = UDim2.new(0, 200, 0, 50)
+	template_2.Visible = false
+	template_2.Font = Enum.Font.Gotham
+	template_2.TextColor3 = Color3.fromRGB(0, 0, 0)
+	template_2.TextScaled = true
+	template_2.TextSize = 14.000
+	template_2.TextWrapped = true
 
 	clear.Name = "clear"
 	clear.Parent = Frame
@@ -194,7 +231,17 @@ function build_ui()
 	clear.TextSize = 14.000
 	clear.TextWrapped = true
 	
-	return rizzed
+	return rizzed2
+end
+
+function create_argument(ui, arguments)
+	destroy_visible_ui(ui.Frame.detail.ScrollingFrame)
+	for argument_index, argument in arguments do
+		local ui_clone = ui.Frame.detail.ScrollingFrame.template:Clone()
+		ui_clone.Text = `"{argument}"`
+		ui_clone.Visible = true
+		ui_clone.Parent = ui.Frame.detail.ScrollingFrame
+	end
 end
 
 function create_remote_call(ui, method, call_name, arguments)
@@ -203,15 +250,21 @@ function create_remote_call(ui, method, call_name, arguments)
 	arguments = arguments or {}
 	
 	local ui_clone = ui.Frame.ScrollingFrame.template:Clone()
-	ui_clone.Text = `{call_name} - {method}`
+	ui_clone.Text = `{call_name}`
 	ui_clone.Visible = true
 	ui_clone.Parent = ui.Frame.ScrollingFrame
 	
 	ui_clone.Activated:Connect(function()
 		ui.Frame.detail.method.Text = `METHOD : {method}`
 		ui.Frame.detail.remote.Text = `CALL NAME : {call_name}`
-		ui.Frame.detail.argument.Text = `ARGUMENTS : {table.concat((function() local _return = {} for _, argument in arguments do table.insert(_return, `"{argument}"`) end return _return end)(), " ,")}`
+		create_argument(ui, arguments)
 	end)
+end
+
+function destroy_visible_ui(ui)
+	for _, object in ui:GetChildren() do
+		if object:IsA("GuiObject") and object.Visible then object:Destroy() end
+	end
 end
 
 --- FUNCTIONS ---
@@ -221,9 +274,7 @@ end
 local ui = build_ui()
 
 ui.Frame.clear.Activated:Connect(function()
-	for _, object in ui.Frame.ScrollingFrame:GetChildren() do
-		if object:IsA("GuiObject") and object.Visible then object:Destroy() end
-	end
+	destroy_visible_ui(ui.Frame.ScrollingFrame)
 end)
 
 UserInputService.InputChanged:Connect(function(input)
@@ -233,6 +284,14 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
+--[[
+for i = 1, 16 do
+	create_remote_call(ui, Random.new():NextInteger(1, i) == 1 and "InvokeServer" or "FireServer", `rizz{i}`, table.create(i, i))
+	task.wait(1)
+end
+--]]
+
+-- [[
 local action = 1
 local blacklist = {"Get Stats", "Player Statues: Get Statue Data"}
 if not _G.blacklist_hook or action == 2 then print_warn(`>>> HOOK BLACK LIST SET\nORIGINAL : {(_G.blacklist_hook and typeof(_G.blacklist_hook == "table") and #_G.blacklist_hook >= 1) and table.concat(wrap_text_table(_G.blacklist_hook), " | ") or "no blacklist/invalid blacklist"}\nNEW : {(blacklist and typeof(blacklist) == "table" and #blacklist >= 1) and table.concat(wrap_text_table(blacklist), " | ") or "no blacklist/invalid blacklist"}`)print(`BLACKLIST SET `) _G.blacklist_hook = blacklist end
@@ -254,4 +313,5 @@ print(`HOOK METHOD :`)
 print(oldNamecall)
 
 --print_warn(`METHOD : {method}\nREMOTE CALL NAME : {table.concat(wrap_text_table(self), " | ")}\nARGUMENTS : {table.concat(wrap_text_table({ ... }), " | ")}`) 
+--ui.Frame.detail.argument.Text = `ARGUMENTS : {table.concat((function() local _return = {} for _, argument in arguments do table.insert(_return, `"{argument}"`) end return _return end)(), " ,")}`
 --]]
