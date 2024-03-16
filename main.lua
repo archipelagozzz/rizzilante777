@@ -9,9 +9,53 @@ local drag_cache = {}
 
 local current_camera = workspace.CurrentCamera
 
+local typa = {
+	["Vector3"] = function(value)
+		return `Vector3.new({value.X}, {value.Y}, {value.Z})`
+	end,
+	["CFrame"] = function(value)
+		return `CFrame.new({value.X}, {value.Y}, {value.Z})`
+	end,
+	["string"] = function(value)
+		return `"{value}"`
+	end,
+	["table"] = function(value, page)
+		return recursive_build(value, "", page + 1)
+	end,
+	["Instance"] = function(value)
+		local parents = {value}
+		local last_object
+		for _ = 1, 999 do
+			if not (last_object or value).Parent then break end
+			table.insert(parents, (last_object or value).Parent)
+			last_object = (last_object or value).Parent
+		end
+
+		local reconstruct_parents = {}
+		for i,v : Instance in parents do
+			reconstruct_parents[(#parents + 1) - i] = (v.Name == game.Name and "game") or v.Name
+		end
+		return table.concat(reconstruct_parents, ".")
+	end,
+}
+
+
 --- VARIABLES ---
 
 --- FUNCTIONS ---
+
+function recursive_build(tbl, current_str, page)
+	page = page or 1
+	local str = current_str or ""
+	local space = ("	")
+
+	str = `{str}\{`
+	for i, v in tbl do
+		str = `{str}\n{space:rep(page)}[{i}] = {typa[typeof(v)] and typa[typeof(v)](v, page) or v},`
+	end
+	str = `{str}\n{page > 1 and space:rep(page-1) or ""}}`
+	return str
+end
 
 function update_gui_drag(ui : GuiObject, input : InputObject)
 	local drag_data = drag_cache[ui]
@@ -89,8 +133,12 @@ function build_ui()
 	local ScrollingFrame_2 = Instance.new("ScrollingFrame")
 	local UIGridLayout = Instance.new("UIGridLayout")
 	local template_2 = Instance.new("TextLabel")
+	local argument_code = Instance.new("ScrollingFrame")
+	local code = Instance.new("TextLabel")
+	local Frame_2 = Instance.new("Frame")
+	local UIListLayout_3 = Instance.new("UIListLayout")
 	local clear = Instance.new("TextButton")
-
+	
 	new_drag(Frame)
 
 	rizzed2.Name = "rizzed2"
@@ -112,6 +160,7 @@ function build_ui()
 	ScrollingFrame.BorderSizePixel = 0
 	ScrollingFrame.Size = UDim2.new(0.349999994, 0, 1, 0)
 	ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ScrollingFrame.ScrollingDirection = Enum.ScrollingDirection.Y
 	ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 
 	template.Name = "template"
@@ -196,7 +245,9 @@ function build_ui()
 	ScrollingFrame_2.BorderSizePixel = 0
 	ScrollingFrame_2.LayoutOrder = 10
 	ScrollingFrame_2.Size = UDim2.new(1, 0, 0.800000012, 0)
-	ScrollingFrame_2.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ScrollingFrame_2.Visible = false
+	ScrollingFrame_2.AutomaticCanvasSize = Enum.AutomaticSize.XY
+	ScrollingFrame_2.ScrollingDirection = Enum.ScrollingDirection.XY
 	ScrollingFrame_2.CanvasSize = UDim2.new(0, 0, 0, 0)
 
 	UIGridLayout.Parent = ScrollingFrame_2
@@ -217,6 +268,43 @@ function build_ui()
 	template_2.TextSize = 14.000
 	template_2.TextWrapped = true
 
+	argument_code.Name = "argument_code"
+	argument_code.Parent = detail
+	argument_code.Active = true
+	argument_code.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	argument_code.BackgroundTransparency = 1.000
+	argument_code.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	argument_code.BorderSizePixel = 0
+	argument_code.LayoutOrder = 5
+	argument_code.Position = UDim2.new(0, 0, 0.200000003, 0)
+	argument_code.Size = UDim2.new(1.545591, 0, 0.800000012, 0)
+	argument_code.CanvasSize = UDim2.new(0, 0, 4, 0)
+
+	code.Name = "code"
+	code.Parent = argument_code
+	code.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	code.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	code.BorderSizePixel = 0
+	code.LayoutOrder = -1
+	code.Position = UDim2.new(0.0695361048, 0, -1.78590696e-07, 0)
+	code.Size = UDim2.new(10, 0, 10, 0)
+	code.Font = Enum.Font.SourceSans
+	code.Text = "{sum}"
+	code.TextColor3 = Color3.fromRGB(255, 255, 255)
+	code.TextSize = 12.000
+	code.TextWrapped = true
+	code.TextXAlignment = Enum.TextXAlignment.Left
+	code.TextYAlignment = Enum.TextYAlignment.Top
+
+	Frame_2.Parent = argument_code
+	Frame_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Frame_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+	Frame_2.BorderSizePixel = 0
+	Frame_2.Size = UDim2.new(0, 100, 0, 100)
+
+	UIListLayout_3.Parent = argument_code
+	UIListLayout_3.SortOrder = Enum.SortOrder.LayoutOrder
+
 	clear.Name = "clear"
 	clear.Parent = Frame
 	clear.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -235,13 +323,7 @@ function build_ui()
 end
 
 function create_argument(ui, arguments)
-	destroy_visible_ui(ui.Frame.detail.ScrollingFrame)
-	for argument_index, argument in arguments do
-		local ui_clone = ui.Frame.detail.ScrollingFrame.template:Clone()
-		ui_clone.Text = `"{argument}"`
-		ui_clone.Visible = true
-		ui_clone.Parent = ui.Frame.detail.ScrollingFrame
-	end
+	ui.Frame.detail.argument_code.code.Text = recursive_build(arguments)
 end
 
 function create_remote_call(ui, method, call_name, arguments)
@@ -283,6 +365,14 @@ UserInputService.InputChanged:Connect(function(input)
 		update_gui_drag(ui, input)
 	end
 end)
+
+--[[
+local i = 0
+while task.wait(1) do
+	i += 1
+	create_remote_call(ui, Random.new():NextInteger(1, i) == 1 and "InvokeServer" or "FireServer", `rizz{i}`, table.create(i, i))
+end
+--]]
 
 local action = 1
 local blacklist = {"Get Stats", "Player Statues: Get Statue Data"}
